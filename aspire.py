@@ -13,16 +13,7 @@ words = "exp/tdnn_7b_chain_online/graph_pp/words.txt"
 model = "exp/tdnn_7b_chain_online/final.mdl"
 graph = "exp/tdnn_7b_chain_online/graph_pp/HCLG.fst"
 
-# Take wav file and get text transcription
-def decode(wavfile):
-    args = shlex.split((command % (wavfile)))
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output = proc.communicate()[1]
-    for line in output.splitlines():
-        if line.startswith('utterance-id1 '):
-            return line.strip('utterance-id1 ')
-    return 'Unable to get text'
-
+# Compute MFCC Features, and store in data_dir/feats.scp
 def compute_mfcc(config, data_dir):
     cmd = srcpath + "featbin/compute-mfcc-feats --config=%s scp:%s ark,scp:%s/feats.ark,%s/feats.scp"
     cmd = cmd % (config, os.path.join(data_dir, "wav.scp"), data_dir, data_dir)
@@ -32,6 +23,7 @@ def compute_mfcc(config, data_dir):
     assert proc.returncode == 0
     print "done"
 
+# Extract IVector features and store in data_dir/ivectors
 def extract_ivectors(extractor, lang_dir, data_dir):
     cmd = "steps/online/nnet2/extract_ivectors.sh --nj 1 %s %s %s %s/ivectors"
     cmd = cmd % (data_dir, lang_dir, extractor, data_dir)
@@ -41,8 +33,9 @@ def extract_ivectors(extractor, lang_dir, data_dir):
     assert proc.returncode == 0
     print "done"
 
+# Decode-and-align wavfiles, text output: data_dir/text, alignments: data_dir/align.ali
 def decode_and_align(words, model, graph, data_dir):
-    cmd = '''nnet3-latgen-faster --print-args=0\
+    cmd = srcpath + '''nnet3bin/nnet3-latgen-faster --print-args=0\
     --online-ivectors=scp:%s/ivectors/ivector_online.scp \
     --online-ivector-period=10 \
     --frame-subsampling-factor=3 \
@@ -55,7 +48,7 @@ def decode_and_align(words, model, graph, data_dir):
     ark:%s/feats.ark \
     ark,t:%s/lattices.ark \
     ark:/dev/null \
-    ark:%s/alignme.ali'''
+    ark:%s/align.ali'''
     cmd = cmd % (data_dir, words, model, graph, data_dir, data_dir, data_dir)
     print "Decoding and aligning..."
     proc = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -67,7 +60,17 @@ def decode_and_align(words, model, graph, data_dir):
         if not line.startswith('LOG'):
             print(line)
             f.write(line + '\n')
-    print "Alignments stored in " + os.path.join(data_dir, "alignme.ali")
+    print "Alignments stored in " + os.path.join(data_dir, "align.ali")
+
+# Convert alignments file to human readable CTM
+def phoneme_ctm(model, data_dir):
+    cmd = srcpath + "bin/ali-to-phones --frame-shift=0.03 --ctm-output %s ark:%s/align.ali %s/phonelvl.ctm"
+    cmd = cmd % (model, data_dir, data_dir)
+    print "Getting phoneme level ctm file...",
+    proc = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc.wait()
+    assert proc.returncode == 0
+    print "stored in " + os.path.join(data_dir, "phonelvl.ctm")
 
 def main():
     global data_dir
@@ -83,6 +86,7 @@ def main():
     compute_mfcc(mfcc_config, data_dir)
     extract_ivectors(ivec_extractor, lang_dir, data_dir)
     decode_and_align(words, model, graph, data_dir)
+    phoneme_ctm(model, data_dir)
 
 if __name__ == '__main__':
     main()
