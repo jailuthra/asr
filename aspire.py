@@ -72,6 +72,19 @@ def phoneme_ctm(model, data_dir):
     assert proc.returncode == 0
     print "stored in " + os.path.join(data_dir, "phonelvl.ctm")
 
+# Generate word-segmented CTM file
+def word_ctm(lang_dir, model, data_dir):
+    cmd = '''%s/latbin/lattice-align-words-lexicon %s/phones/align_lexicon.int %s ark:%s/lattices.ark ark:- | \
+      %s/latbin/lattice-1best ark:- ark:- | \
+      %s/latbin/nbest-to-ctm --frame-shift=0.03 ark:- %s/wordlvl.ctm'''
+    cmd = cmd % (srcpath, lang_dir, model, data_dir, srcpath, srcpath, data_dir)
+    print "Getting word level ctm file...",
+    # TODO: Pipe using python, not shell
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc.wait()
+    assert proc.returncode == 0
+    print "stored in " + os.path.join(data_dir, "wordlvl.ctm")
+
 def main():
     global data_dir
     if (len(sys.argv) < 2):
@@ -87,6 +100,7 @@ def main():
     extract_ivectors(ivec_extractor, lang_dir, data_dir)
     decode_and_align(words, model, graph, data_dir)
     phoneme_ctm(model, data_dir)
+    word_ctm(lang_dir, model, data_dir)
 
 if __name__ == '__main__':
     main()
