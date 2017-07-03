@@ -3,12 +3,15 @@
 import subprocess, shlex, sys
 import os
 from filegen import filegen
+from id2phone import id2phone
+from id2word import id2word
 
 srcpath = "/Users/darkapex/git/kaldi/src/"
 mfcc_config = "conf/mfcc_hires.conf"
 lang_dir = "data/lang_pp_test"
 data_dir = "data/alignme"
 ivec_extractor = "exp/tdnn_7b_chain_online/ivector_extractor"
+phones = "exp/tdnn_7b_chain_online/phones.txt"
 words = "exp/tdnn_7b_chain_online/graph_pp/words.txt"
 model = "exp/tdnn_7b_chain_online/final.mdl"
 graph = "exp/tdnn_7b_chain_online/graph_pp/HCLG.fst"
@@ -70,6 +73,7 @@ def phoneme_ctm(model, data_dir):
     proc = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     proc.wait()
     assert proc.returncode == 0
+    id2phone(phones, os.path.join(data_dir, "phonelvl.ctm"))
     print "stored in " + os.path.join(data_dir, "phonelvl.ctm")
 
 # Generate word-segmented CTM file
@@ -83,6 +87,7 @@ def word_ctm(lang_dir, model, data_dir):
     proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     proc.wait()
     assert proc.returncode == 0
+    id2word(words, os.path.join(data_dir, "wordlvl.ctm"))
     print "stored in " + os.path.join(data_dir, "wordlvl.ctm")
 
 def main():
