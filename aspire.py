@@ -5,6 +5,7 @@ import os
 from filegen import filegen
 from id2phone import id2phone
 from id2word import id2word
+from ctm2tg import ctm2tg
 
 srcpath = "/Users/darkapex/git/kaldi/src/"
 mfcc_config = "conf/mfcc_hires.conf"
@@ -106,6 +107,7 @@ def main():
     decode_and_align(words, model, graph, data_dir)
     phoneme_ctm(model, data_dir)
     word_ctm(lang_dir, model, data_dir)
+    ctm2tg(wav_dir, data_dir)
 
 if __name__ == '__main__':
     main()
