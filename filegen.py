@@ -48,9 +48,9 @@ def get_utt2spk(spk2utt):
 
 def write_scp(dirname, filename, data):
     f = open(os.path.join(dirname, filename), 'w')
-    for key, val in data.iteritems():
+    for key, val in iter(sorted(data.iteritems())):
         if type(val) == list:
-            val = ' '.join(val)
+            val = ' '.join(sorted(val))
         f.write("%s %s\n" % (key, val))
 
 def filegen(wavdir, outdir):
