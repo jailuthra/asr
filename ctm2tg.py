@@ -1,29 +1,42 @@
 #!/usr/bin/env python
 
+'''
+Convert Kaldi's CTM alignment output to Praat's TextGrid format.
+'''
+
 import csv, sys, os
 from praatio import tgio
 
 def readCSV(filename):
+    '''Read a CSV (CTM) file.'''
     with open(filename, 'rb') as fileobj:
         out = list(csv.reader(fileobj, delimiter=' '))
     return out 
 
 def csv2tgdict(ctmlist):
+    '''Convert a list of tuples read from the CTM file to a TextGrid dictionary.'''
     out = {}
     for row in ctmlist:
         if row[0] not in out:
             out[row[0]] = []
-        segment = (row[2], str(float(row[2]) + float(row[3])), row[4])
+        segment = (row[2], str(float(row[2]) + float(row[3])), row[4].split('_')[0])
         out[row[0]].append(segment)
     return out
 
 def wavscp2dict(wavscp):
+    '''Convert a list of tuples read from the wavscp file to a dictionary.'''
     out = {}
     for row in wavscp:
         out[row[0]] = row[1]
     return out
 
 def ctm2tg(wavdir, outdir):
+    '''Convert CTM alignment files to Praat's TextGrid format.
+
+    Args:
+    wavdir -- path to the directory containing speech wav files
+    outdir -- path to output the textgrid files in
+    '''
     print "Converting ctm files to Praat Textgrids...",
     words = readCSV(os.path.join(outdir, 'wordlvl.ctm'))
     phones = readCSV(os.path.join(outdir, 'phonelvl.ctm'))

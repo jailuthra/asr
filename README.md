@@ -9,8 +9,8 @@ It currently works with the [ASpIRE pre-trained model](http://kaldi-asr.org/mode
 
 * Compiled Kaldi instance ([instructions](https://github.com/kaldi-asr/kaldi/blob/master/INSTALL))
 * ASpIRE chain pre-trained model ([download](http://kaldi-asr.org/models.html), [preparation](https://chrisearch.wordpress.com/2017/03/11/speech-recognition-using-kaldi-extending-and-using-the-aspire-model/))
+* For displaying the TextGrid alignment files, you will need to install [praat](http://www.fon.hum.uva.nl/praat/).
 * For generating TextGrid alignment files, you will need to install the python package for [praatIO](https://github.com/timmahrt/praatIO).
-If you do not need TextGrid files, comment out the function call from `aspire.py`.
 
 ### Download scripts
 

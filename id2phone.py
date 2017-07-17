@@ -3,6 +3,7 @@
 import csv, sys
 
 def id2phone(phonestxt, ctmfilename):
+    '''Replace phone-IDs in CTM file, with actual phones'''
     with open(phonestxt, 'rb') as phonefile:
         phones = list(csv.reader(phonefile, delimiter=' '))
 

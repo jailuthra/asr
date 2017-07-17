@@ -1,16 +1,21 @@
 #!/usr/bin/env python
+'''Generate configuration files for decoding via Kaldi.
+
+The input directory (wavdir) should contain 16-bit 8KHz wav files,
+with the naming convention <spk_id>_<utt_id>.wav.
+For example: 0001_0001.wav, 0002_0001.wav etc.
+'''
 
 import sys
 import os
 from glob import glob
 
 def get_filepaths(directory):
-    """
-    This function will generate the file names in a directory 
+    '''This function will generate the file names in a directory 
     tree by walking the tree either top-down or bottom-up. For each 
     directory in the tree rooted at directory top (including top itself), 
     it yields a 3-tuple (dirpath, dirnames, filenames).
-    """
+    '''
     file_paths = []  # List which will store all of the full filepaths.
     # Walk the tree.
     for root, directories, files in os.walk(directory):
@@ -54,6 +59,11 @@ def write_scp(dirname, filename, data):
         f.write("%s %s\n" % (key, val))
 
 def filegen(wavdir, outdir):
+    '''Generate wav.scp, spk2utt, utt2spk using wav files.
+    Args:
+        wavdir -- Path to directory having the wav files
+        outdir -- Path to directory where the config files will be written
+    '''
     wavs = get_filepaths(wavdir)
     wavscp = get_wavscp(wavs)
     # print wavscp

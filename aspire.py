@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+'''Convert speech audio to text output, with alignments, using Kaldi.'''
 
 import subprocess, shlex, sys
 import os
@@ -17,8 +18,8 @@ words = "exp/tdnn_7b_chain_online/graph_pp/words.txt"
 model = "exp/tdnn_7b_chain_online/final.mdl"
 graph = "exp/tdnn_7b_chain_online/graph_pp/HCLG.fst"
 
-# Compute MFCC Features, and store in data_dir/feats.scp
 def compute_mfcc(config, data_dir):
+    '''Compute MFCC Features, and store in data_dir/feats.scp'''
     cmd = srcpath + "featbin/compute-mfcc-feats --config=%s scp:%s ark,scp:%s/feats.ark,%s/feats.scp"
     cmd = cmd % (config, os.path.join(data_dir, "wav.scp"), data_dir, data_dir)
     print "Computing MFCC features...",
@@ -27,8 +28,8 @@ def compute_mfcc(config, data_dir):
     assert proc.returncode == 0
     print "done"
 
-# Extract IVector features and store in data_dir/ivectors
 def extract_ivectors(extractor, lang_dir, data_dir):
+    '''Extract IVector features and store in data_dir/ivectors'''
     cmd = "steps/online/nnet2/extract_ivectors.sh --nj 1 %s %s %s %s/ivectors"
     cmd = cmd % (data_dir, lang_dir, extractor, data_dir)
     print "Extracting Ivectors...",
@@ -37,8 +38,18 @@ def extract_ivectors(extractor, lang_dir, data_dir):
     assert proc.returncode == 0
     print "done"
 
-# Decode-and-align wavfiles, text output: data_dir/text, alignments: data_dir/align.ali
 def decode_and_align(words, model, graph, data_dir):
+    '''Decode-and-align wavfiles.
+    
+    text output: data_dir/text
+    alignments: data_dir/align.ali
+    
+    Args:
+        words -- words.txt file containing word_id and word mappings
+        model -- pre-trained nnet3 kaldi model (tested with aspire)
+        graph -- compiled FST graph for the grammar
+        data_dir -- path to a directory where decoding/alignment output should be stored
+    '''
     cmd = srcpath + '''nnet3bin/nnet3-latgen-faster --print-args=0\
     --online-ivectors=scp:%s/ivectors/ivector_online.scp \
     --online-ivector-period=10 \
@@ -66,8 +77,8 @@ def decode_and_align(words, model, graph, data_dir):
             f.write(line + '\n')
     print "Alignments stored in " + os.path.join(data_dir, "align.ali")
 
-# Convert alignments file to human readable CTM
 def phoneme_ctm(model, data_dir):
+    '''Convert ark phone alignments file to human readable CTM.'''
     cmd = srcpath + "bin/ali-to-phones --frame-shift=0.03 --ctm-output %s ark:%s/align.ali %s/phonelvl.ctm"
     cmd = cmd % (model, data_dir, data_dir)
     print "Getting phoneme level ctm file...",
@@ -77,8 +88,8 @@ def phoneme_ctm(model, data_dir):
     id2phone(phones, os.path.join(data_dir, "phonelvl.ctm"))
     print "stored in " + os.path.join(data_dir, "phonelvl.ctm")
 
-# Generate word-segmented CTM file
 def word_ctm(lang_dir, model, data_dir):
+    '''Convert ark word alignments file to human readable CTM.'''
     cmd = '''%s/latbin/lattice-align-words-lexicon %s/phones/align_lexicon.int %s ark:%s/lattices.ark ark:- | \
       %s/latbin/lattice-1best ark:- ark:- | \
       %s/latbin/nbest-to-ctm --frame-shift=0.03 ark:- %s/wordlvl.ctm'''
@@ -90,6 +101,15 @@ def word_ctm(lang_dir, model, data_dir):
     assert proc.returncode == 0
     id2word(words, os.path.join(data_dir, "wordlvl.ctm"))
     print "stored in " + os.path.join(data_dir, "wordlvl.ctm")
+
+def run_praat(wav_dir, data_dir):
+    '''Run Praat to display TextGrid files alongside the wav input.'''
+    cmd = '''praat --open %s/* %s/*''' % (wav_dir, os.path.join(data_dir, 'tg'))
+    print "Running Praat"
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc.wait()
+    assert proc.returncode == 0
+    print "Exiting.."
 
 def main():
     global data_dir
@@ -108,6 +128,10 @@ def main():
     phoneme_ctm(model, data_dir)
     word_ctm(lang_dir, model, data_dir)
     ctm2tg(wav_dir, data_dir)
+    disp = raw_input("Display alignments using Praat right now? (y/n): ")
+    disp = disp.lower()
+    if (disp == 'y' or disp == 'yes'):
+        run_praat(wav_dir, data_dir)
 
 if __name__ == '__main__':
     main()

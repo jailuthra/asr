@@ -3,6 +3,7 @@
 import csv, sys
 
 def id2word(wordstxt, ctmfilename):
+    '''Replace word-IDs in CTM file, with actual words'''
     with open(wordstxt, 'rb') as wordfile:
         words = list(csv.reader(wordfile, delimiter=' '))
 
